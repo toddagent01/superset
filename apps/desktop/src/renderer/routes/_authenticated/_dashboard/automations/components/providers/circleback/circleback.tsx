@@ -1,12 +1,13 @@
 import { isEmptyScope } from "@superset/shared/automation-triggers";
-import { LuMic } from "react-icons/lu";
+import circlebackIconUrl from "renderer/assets/icons/circleback-icon.png";
 import { env } from "renderer/env.renderer";
 import { EndpointChip } from "../../TriggerSentence/components/EndpointChip";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { TextFilterChip } from "../../TriggerSentence/components/TextFilterChip";
+import { brandIcon } from "../components/BrandIcon";
 import { Sentence } from "../components/Sentence";
+import { SigningSecretChip } from "../components/SigningSecretChip";
 import type { SentenceContext, TriggerProvider } from "../types";
-import { SigningSecretChip } from "./components/SigningSecretChip";
 import {
 	CIRCLEBACK_MENU,
 	CIRCLEBACK_SENTENCE,
@@ -81,6 +82,8 @@ function renderSlot(
 				<SigningSecretChip
 					key={index}
 					triggerId={triggerId}
+					providerName="Circleback"
+					whereToFind="Circleback shows this when you paste the URL into its automation."
 					disabled={disabled}
 				/>
 			);
@@ -90,7 +93,7 @@ function renderSlot(
 export const circlebackProvider: TriggerProvider<CirclebackConfig> = {
 	kind: "circleback",
 	label: "Circleback",
-	icon: LuMic,
+	icon: brandIcon(circlebackIconUrl, "Circleback"),
 	menu: CIRCLEBACK_MENU,
 	renderSentence: (config, ctx) => (
 		<Sentence

@@ -230,6 +230,7 @@ export const LAUNCHED_TRIGGER_KINDS = [
 	"sentry",
 	"notion",
 	"circleback",
+	"granola",
 	"microsoft_teams",
 	"google_calendar",
 	"gmail",

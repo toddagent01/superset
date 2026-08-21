@@ -119,6 +119,7 @@ export const automationTriggerKindValues = [
 	"gmail",
 	"notion",
 	"circleback",
+	"granola",
 ] as const satisfies readonly TriggerConfigInput["kind"][];
 
 export type _EveryKindHasEnumValue = [

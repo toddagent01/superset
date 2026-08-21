@@ -11,6 +11,7 @@ import {
 	gmailTriggerMatches,
 	googleCalendarTriggerMatches,
 } from "./google";
+import { type GranolaMatchableEvent, granolaTriggerMatches } from "./granola";
 import { type LinearMatchableEvent, linearTriggerMatches } from "./linear";
 import {
 	type MicrosoftTeamsMatchableEvent,
@@ -25,6 +26,7 @@ export * from "./circleback";
 export * from "./core";
 export * from "./github";
 export * from "./google";
+export * from "./granola";
 export * from "./linear";
 export * from "./microsoft-teams";
 export * from "./notion";
@@ -47,6 +49,7 @@ export type MatchableEvent =
 	| LinearMatchableEvent
 	| SlackMatchableEvent
 	| CirclebackMatchableEvent
+	| GranolaMatchableEvent
 	| MicrosoftTeamsMatchableEvent
 	| SentryMatchableEvent
 	| GoogleCalendarMatchableEvent
@@ -105,6 +108,11 @@ export function triggerMatches(
 		case "circleback":
 			return circlebackTriggerMatches(
 				config as Extract<TriggerConfigInput, { kind: "circleback" }>,
+				event,
+			);
+		case "granola":
+			return granolaTriggerMatches(
+				config as Extract<TriggerConfigInput, { kind: "granola" }>,
 				event,
 			);
 		case "microsoft_teams":

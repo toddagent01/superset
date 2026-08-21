@@ -3,6 +3,7 @@ import { circlebackProvider } from "./circleback/circleback";
 import { githubProvider } from "./github/github";
 import { gmailProvider } from "./google/gmail";
 import { googleCalendarProvider } from "./google/googleCalendar";
+import { granolaProvider } from "./granola/granola";
 import { linearProvider } from "./linear/linear";
 import { microsoftTeamsProvider } from "./microsoftTeams/microsoftTeams";
 import { notionProvider } from "./notion/notion";
@@ -37,6 +38,7 @@ export const TRIGGER_PROVIDERS: TriggerProvider[] = [
 	webhookProvider as TriggerProvider,
 	notionProvider as TriggerProvider,
 	circlebackProvider as TriggerProvider,
+	granolaProvider as TriggerProvider,
 	googleCalendarProvider as TriggerProvider,
 	gmailProvider as TriggerProvider,
 ];

@@ -10,20 +10,28 @@ import { useState } from "react";
 import { LuKeyRound } from "react-icons/lu";
 import { apiTrpcClient } from "renderer/lib/api-trpc-client";
 import { cloudTrpc } from "renderer/lib/cloud-trpc";
-import { CHIP, CHIP_EMPTY } from "../../../../TriggerSentence/chipStyles";
+import { CHIP, CHIP_EMPTY } from "../../../TriggerSentence/chipStyles";
 
 /**
- * Circleback issues the signing secret when the URL is pasted into its
- * automation editor, so this takes it back rather than revealing one of ours.
- * The value goes straight to the trigger row's secret column — never through
- * the config, which every member of the organization can read — and the chip
- * shows only its prefix afterwards.
+ * The provider issues the signing secret, so this takes one back rather than
+ * revealing one of ours. The value goes straight to the trigger row's secret
+ * column — never through the config, which every member of the organization
+ * can read — and the chip shows only its prefix afterwards.
+ *
+ * Shared by every provider that signs its deliveries; only the copy naming
+ * where to find the secret differs.
  */
 export function SigningSecretChip({
 	triggerId,
+	providerName,
+	whereToFind,
 	disabled,
 }: {
 	triggerId?: string;
+	/** Named in the copy, so the person knows whose secret to paste. */
+	providerName: string;
+	/** One sentence saying where that provider shows it. */
+	whereToFind: string;
 	disabled?: boolean;
 }) {
 	const { automationId } = useParams({ strict: false });
@@ -85,7 +93,7 @@ export function SigningSecretChip({
 					<Input
 						autoFocus
 						value={draft}
-						placeholder="Paste the whsec_… secret from Circleback"
+						placeholder={`Paste the signing secret from ${providerName}`}
 						disabled={save.isPending}
 						autoComplete="off"
 						spellCheck={false}
@@ -108,7 +116,7 @@ export function SigningSecretChip({
 				<p className="mt-1.5 px-1 text-[12px] text-muted-foreground">
 					{secretPrefix
 						? `${secretPrefix}… is set. Saving a new one replaces it.`
-						: "Circleback shows this when you paste the URL into its automation. Deliveries are rejected until it is set."}
+						: `${whereToFind} Deliveries are rejected until it is set.`}
 				</p>
 			</PopoverContent>
 		</Popover>

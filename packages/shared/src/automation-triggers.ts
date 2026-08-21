@@ -251,6 +251,25 @@ export const circlebackTriggerConfigSchema = z.object({
 	nameFilter: textFilterSchema.nullable().default(null),
 });
 
+export const granolaTriggerEventValues = ["note.generated"] as const;
+export type GranolaTriggerEvent = (typeof granolaTriggerEventValues)[number];
+
+/**
+ * Granola, registered the same way Circleback is: a per-trigger URL pasted
+ * into their Settings → Connectors → Webhooks, signed with the secret they
+ * show once at creation. No connection, no stored credential.
+ *
+ * No filters, and that is Granola's shape rather than an omission — a delivery
+ * carries only `note_id`, `event_type` and a timestamp, never the note itself,
+ * so there is nothing here to narrow on. Which notes reach us is chosen on
+ * Granola's side when the endpoint is registered (its scopes and `folder_ids`).
+ * The agent reads the note through the Granola MCP plugin using the id.
+ */
+export const granolaTriggerConfigSchema = z.object({
+	kind: z.literal("granola"),
+	event: z.enum(granolaTriggerEventValues),
+});
+
 /**
  * Notion. `comment.mentioned` is not a Notion event: it is `comment.created`
  * narrowed to comments whose rich text mentions a user, which the webhook
@@ -406,6 +425,7 @@ export const draftTriggerSchema = z.object({
 		sentryTriggerConfigSchema,
 		notionTriggerConfigSchema,
 		circlebackTriggerConfigSchema,
+		granolaTriggerConfigSchema,
 		microsoftTeamsTriggerConfigSchema,
 		googleCalendarTriggerConfigSchema,
 		gmailTriggerConfigSchema,

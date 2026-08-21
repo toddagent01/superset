@@ -60,6 +60,7 @@ const TRIGGER_KIND_REQUIRED_PLAN: Partial<
 	sentry: "pro",
 	notion: "pro",
 	circleback: "pro",
+	granola: "pro",
 	google_calendar: "pro",
 	gmail: "pro",
 	webhook: "pro",
