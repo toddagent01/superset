@@ -46,7 +46,7 @@ function renderSlot(
 					options={options.google?.people ?? []}
 					emptyLabel="Select people"
 					anyLabel="Anyone"
-					allowCustom={{ placeholder: "Type an email, press Enter" }}
+					allowCustom={{ placeholder: "Search people or add an email..." }}
 					disabled={disabled}
 				/>
 			);

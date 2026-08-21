@@ -37,7 +37,7 @@ export function TextFilterChip({
 					    is a deliberate wide-open match, not a blank to fill in, and
 					    muting it made a configured chip read as disabled. */}
 					<ChipButton
-						label={value?.pattern || emptyLabel}
+						label={value?.pattern ? `"${value.pattern}"` : emptyLabel}
 						disabled={disabled}
 						className="max-w-52"
 					/>

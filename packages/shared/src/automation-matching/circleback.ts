@@ -27,6 +27,8 @@ function lower(values: string[]): string[] {
 /** `scopeAllowsAny`, with both sides folded to one case first. */
 function narrows(scope: TriggerScope, values: string[]): boolean {
 	if (scope.mode === "any") return true;
+	// "me" is pre-resolved by the dispatcher; unresolved it matches nobody.
+	if (scope.mode === "me") return false;
 	return scopeAllowsAny({ mode: "list", ids: lower(scope.ids) }, lower(values));
 }
 

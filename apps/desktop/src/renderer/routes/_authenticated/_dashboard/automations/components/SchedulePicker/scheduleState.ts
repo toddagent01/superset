@@ -18,19 +18,18 @@ export interface SchedulePickerState {
 export const PRESET_OPTIONS: { value: PresetKind; label: string }[] = [
 	{ value: "hourly", label: "Hourly" },
 	{ value: "daily", label: "Daily" },
-	{ value: "weekdays", label: "Weekdays" },
 	{ value: "weekly", label: "Weekly" },
 	{ value: "custom", label: "Custom" },
 ];
 
 export const DAY_OPTIONS: { value: Weekday; label: string }[] = [
+	{ value: "SU", label: "Sunday" },
 	{ value: "MO", label: "Monday" },
 	{ value: "TU", label: "Tuesday" },
 	{ value: "WE", label: "Wednesday" },
 	{ value: "TH", label: "Thursday" },
 	{ value: "FR", label: "Friday" },
 	{ value: "SA", label: "Saturday" },
-	{ value: "SU", label: "Sunday" },
 ];
 
 /** Derive the picker's structured state from an RRULE string. */
@@ -45,7 +44,6 @@ export function stateFromRrule(rrule: string): SchedulePickerState {
 	};
 	switch (match.kind) {
 		case "daily":
-		case "weekdays":
 			return { ...base, hour: match.hour, minute: match.minute };
 		case "weekly":
 			return {
@@ -69,12 +67,6 @@ export function rruleFromState(state: SchedulePickerState): string {
 		case "daily":
 			return buildRrule({
 				kind: "daily",
-				hour: state.hour,
-				minute: state.minute,
-			});
-		case "weekdays":
-			return buildRrule({
-				kind: "weekdays",
 				hour: state.hour,
 				minute: state.minute,
 			});

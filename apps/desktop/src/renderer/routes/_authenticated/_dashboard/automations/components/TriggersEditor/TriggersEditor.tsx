@@ -4,6 +4,11 @@ import {
 	enabledTriggerKinds,
 	summarizeTriggerProblems,
 } from "@superset/shared/automation-triggers";
+import {
+	type PlanTier,
+	planAllowsTriggerKind,
+	requiredPlanForTriggerKind,
+} from "@superset/shared/billing";
 import { FEATURE_FLAGS } from "@superset/shared/constants";
 import { Button } from "@superset/ui/button";
 import {
@@ -16,12 +21,36 @@ import { Input } from "@superset/ui/input";
 import { Separator } from "@superset/ui/separator";
 import { useFeatureFlagPayload } from "posthog-js/react";
 import { type ReactNode, useMemo, useState } from "react";
-import { LuCirclePlus, LuTriangleAlert } from "react-icons/lu";
-import { providerFor, TRIGGER_PROVIDERS } from "../providers";
+import { LuPlus, LuTriangleAlert } from "react-icons/lu";
+import { useCurrentPlan } from "renderer/hooks/useCurrentPlan";
+import {
+	providerFor,
+	TRIGGER_PROVIDERS,
+	type TriggerProvider,
+} from "../providers";
 import { useProviderOptions } from "../providers/useProviderOptions";
 import { TriggerSentence } from "../TriggerSentence";
 import { TriggerMenuItems } from "./TriggerMenuItems";
 import { flattenTriggerMenu, matchesQuery } from "./triggerMenu";
+
+type ScheduleTriggerConfig = Extract<
+	DraftTrigger["config"],
+	{ kind: "schedule" }
+>;
+
+/**
+ * The tier badge for a provider the viewer's plan can't add, or null when it
+ * can. The dispatcher enforces the same shared map — an above-tier trigger
+ * stays editable but never fires.
+ */
+function lockedTierFor(
+	provider: TriggerProvider,
+	plan: PlanTier,
+): string | null {
+	const required = requiredPlanForTriggerKind(provider.kind);
+	if (!required || planAllowsTriggerKind(plan, provider.kind)) return null;
+	return required === "enterprise" ? "Enterprise" : "Pro";
+}
 
 interface TriggersEditorProps {
 	triggers: DraftTrigger[];
@@ -29,9 +58,18 @@ interface TriggersEditorProps {
 	onChange: (next: DraftTrigger[]) => undefined | Promise<unknown>;
 	/** Whose integrations the pickable lists come from. */
 	organizationId: string;
-	/** Trailing "Next run ..." text for one schedule row, by trigger id. */
-	renderNextRun?: (triggerId?: string) => ReactNode;
+	/**
+	 * Trailing "Next run ..." text for a schedule row, computed from the draft
+	 * config on screen — so unsaved rows have one too, and edits move it.
+	 */
+	renderNextRun?: (config: ScheduleTriggerConfig) => ReactNode;
 	readOnly?: boolean;
+	/**
+	 * Rendered between the trigger surface and the runtime warnings — the scope
+	 * line ("in X on Y using Z"), so warnings read as footnotes to the whole
+	 * setup rather than wedging into the middle of it.
+	 */
+	children?: ReactNode;
 }
 
 /**
@@ -48,6 +86,7 @@ export function TriggersEditor({
 	organizationId,
 	renderNextRun,
 	readOnly,
+	children,
 }: TriggersEditorProps) {
 	// Edited locally and saved on request, unlike the rest of this page.
 	//
@@ -76,17 +115,24 @@ export function TriggersEditor({
 	// Unlike problems, these show without waiting for a save attempt: they
 	// describe the world (a channel the bot is not in), not an unfinished edit,
 	// and the person who can fix them may not be the one editing.
+	const { plan } = useCurrentPlan();
+
 	const runtimeWarnings = useMemo(() => {
 		const seen = new Set<string>();
 		for (const draft of drafts) {
 			const provider = providerFor(draft.config);
+			// A downgraded org keeps its rows; the warning names the tier they
+			// came from rather than hiding them.
+			const tier = lockedTierFor(provider, plan);
+			if (tier)
+				seen.add(`${provider.label} triggers require the ${tier} plan.`);
 			for (const warning of provider.runtimeWarnings?.(draft.config, options) ??
 				[]) {
 				seen.add(warning);
 			}
 		}
 		return [...seen];
-	}, [drafts, options]);
+	}, [drafts, options, plan]);
 
 	// Nothing is wrong until someone says they are done. Every trigger is
 	// incomplete the instant it is added, so validating as you type marks a row
@@ -108,7 +154,15 @@ export function TriggersEditor({
 	}, [enabledKinds]);
 
 	const [query, setQuery] = useState("");
-	const leaves = useMemo(() => flattenTriggerMenu(providers), [providers]);
+	// Locked providers stay in the menu — the tier badge answers "where's
+	// Slack?" — but can't be added, so search doesn't index them.
+	const leaves = useMemo(
+		() =>
+			flattenTriggerMenu(
+				providers.filter((provider) => !lockedTierFor(provider, plan)),
+			),
+		[providers, plan],
+	);
 	const results = query
 		? leaves.filter((leaf) => matchesQuery(leaf, query))
 		: [];
@@ -204,7 +258,7 @@ export function TriggersEditor({
 						problems={shownProblems.filter((p) => p.index === index)}
 						nextRun={
 							trigger.config.kind === "schedule"
-								? renderNextRun?.(trigger.id)
+								? renderNextRun?.(trigger.config)
 								: undefined
 						}
 						disabled={readOnly}
@@ -225,9 +279,9 @@ export function TriggersEditor({
 							type="button"
 							variant="ghost"
 							size="sm"
-							className="mb-1.5 h-10 w-full justify-start gap-2 rounded-[8px] px-2 font-normal text-[13px] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
+							className="h-10 w-full justify-start gap-1.5 rounded-[8px] px-2 font-normal text-[13px] text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
 						>
-							<LuCirclePlus className="size-4" />
+							<LuPlus className="size-4" />
 							Add Trigger
 						</Button>
 					</DropdownMenuTrigger>
@@ -280,23 +334,34 @@ export function TriggersEditor({
 								)}
 							</>
 						) : (
-							<TriggerMenuItems providers={providers} onPick={add} />
+							<TriggerMenuItems
+								providers={providers}
+								onPick={add}
+								lockedLabel={(provider) => lockedTierFor(provider, plan)}
+							/>
 						)}
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>
 
-			{/* Below the surface, like the save banner is above it: these outlive
-			    any save, so they cannot live in the submit-gated banner. */}
-			{runtimeWarnings.map((warning) => (
-				<p
-					key={warning}
-					className="mt-1 flex items-start gap-1.5 px-1 text-[13px] text-amber-600 dark:text-amber-400"
-				>
-					<LuTriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-					<span>{warning}</span>
-				</p>
-			))}
+			{children}
+
+			{/* Below the surface and the scope line, like the save banner is above
+			    them: these outlive any save, so they cannot live in the
+			    submit-gated banner. */}
+			{runtimeWarnings.length > 0 && (
+				<div className="flex flex-col gap-2 px-1 py-6">
+					{runtimeWarnings.map((warning) => (
+						<p
+							key={warning}
+							className="flex cursor-text select-text items-start gap-1.5 text-[13px] text-amber-600 dark:text-amber-400"
+						>
+							<LuTriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+							<span>{warning}</span>
+						</p>
+					))}
+				</div>
+			)}
 		</div>
 	);
 }

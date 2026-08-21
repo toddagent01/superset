@@ -48,7 +48,9 @@ export function useProviderOptions(
 			const result = results[index];
 			options[group] = result?.data ?? {};
 			state[group] = {
-				isLoading: result?.isLoading ?? false,
+				// isFetching, not isLoading: a Refresh with data already on screen
+				// must still read as in-flight, or the button gives no feedback.
+				isLoading: result?.isFetching ?? false,
 				isError: result?.isError ?? false,
 				refetch: () => void result?.refetch(),
 			};

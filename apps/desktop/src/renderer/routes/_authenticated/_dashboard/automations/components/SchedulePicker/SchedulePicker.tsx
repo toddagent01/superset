@@ -130,9 +130,7 @@ export function SchedulePicker({
 						</Select>
 					)}
 
-					{(state.kind === "daily" ||
-						state.kind === "weekdays" ||
-						state.kind === "weekly") && (
+					{(state.kind === "daily" || state.kind === "weekly") && (
 						<Input
 							type="time"
 							// color-scheme tells Chromium to render native controls (the

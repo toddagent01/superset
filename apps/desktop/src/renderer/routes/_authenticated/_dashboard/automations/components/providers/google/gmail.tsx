@@ -30,7 +30,7 @@ function renderSlot(
 					options={[]}
 					emptyLabel="Select senders"
 					anyLabel="Any sender"
-					allowCustom={{ placeholder: "Add address or domain…" }}
+					allowCustom={{ placeholder: "Search or add an address or domain..." }}
 					disabled={disabled}
 				/>
 			);
@@ -44,7 +44,7 @@ function renderSlot(
 					options={[]}
 					emptyLabel="Any recipient"
 					anyLabel="Any recipient"
-					allowCustom={{ placeholder: "Add address or domain…" }}
+					allowCustom={{ placeholder: "Search or add an address or domain..." }}
 					disabled={disabled}
 				/>
 			);

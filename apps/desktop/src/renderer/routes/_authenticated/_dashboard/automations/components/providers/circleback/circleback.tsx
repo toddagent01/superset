@@ -37,7 +37,7 @@ function renderSlot(
 					options={[]}
 					emptyLabel="Any tag"
 					anyLabel="Any tag"
-					allowCustom={{ placeholder: "Type a tag, press Enter" }}
+					allowCustom={{ placeholder: "Search tags or add your own..." }}
 					disabled={disabled}
 				/>
 			);
@@ -52,7 +52,7 @@ function renderSlot(
 					options={[]}
 					emptyLabel="Any attendee"
 					anyLabel="Any attendee"
-					allowCustom={{ placeholder: "Type an email, press Enter" }}
+					allowCustom={{ placeholder: "Search people or add an email..." }}
 					disabled={disabled}
 				/>
 			);

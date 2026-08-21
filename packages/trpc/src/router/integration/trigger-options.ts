@@ -16,7 +16,13 @@ import { verifyOrgMembership } from "./utils";
  * names (Slack channels): false means the trigger will stay silent until
  * someone invites the bot, and the editor warns from it.
  */
-export type TriggerOption = { id: string; label: string; botMember?: boolean };
+export type TriggerOption = {
+	id: string;
+	label: string;
+	/** Muted context beside the label — a repo's owner org. */
+	hint?: string;
+	botMember?: boolean;
+};
 
 export type TriggerOptionContext = {
 	organizationId: string;

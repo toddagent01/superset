@@ -1,6 +1,5 @@
 import { FaSlack } from "react-icons/fa";
 import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
-import { SelectChip } from "../../TriggerSentence/components/SelectChip";
 import { TextFilterChip } from "../../TriggerSentence/components/TextFilterChip";
 import { Sentence } from "../components/Sentence";
 import type { SentenceContext, TriggerProvider } from "../types";
@@ -11,11 +10,6 @@ import {
 	type SlackConfig,
 	type Slot,
 } from "./grammar";
-
-const THREAD_OPTIONS = [
-	{ value: "top", label: "top-level only" },
-	{ value: "replies", label: "including replies" },
-] as const;
 
 /**
  * Renders one slot of a Slack sentence. Each slot names the config field it
@@ -38,10 +32,15 @@ function renderSlot(
 					options={options.slack?.channels ?? []}
 					emptyLabel="Select channels"
 					anyLabel="Any channel"
+					// Slack only delivers events from channels the bot is in, so "any
+					// channel" would promise more than it can watch.
+					allowAny={false}
 					countNoun={{ singular: "channel", plural: "channels" }}
 					// The roster only lists channels the bot can see plus public ones;
 					// a pasted id is the way in for anything else.
-					allowCustom={{ placeholder: "Paste a channel ID..." }}
+					allowCustom={{
+						placeholder: "Search channels or paste channel ID...",
+					}}
 					state={optionState?.slack}
 					disabled={disabled}
 				/>
@@ -51,23 +50,26 @@ function renderSlot(
 				<EmojiNameChip
 					key={index}
 					names={config.emoji.mode === "list" ? config.emoji.ids : []}
-					// Clearing an optional filter means "any", not "none": the chip
-					// says "Any reaction" either way, and an empty list would make
-					// that a lie.
-					onChange={(names) =>
-						set({
-							emoji: names.length
-								? { mode: "list", ids: names }
-								: { mode: "any" },
-						})
-					}
+					onChange={(names) => set({ emoji: { mode: "list", ids: names } })}
 					className={mark("emoji")}
-					emptyLabel="Any reaction"
+					emptyLabel="Select emoji"
 					placeholder=":bug: or bug, eyes"
 					disabled={disabled}
 				/>
 			);
-		case "actor":
+		case "actor": {
+			// Ahead-of-time people filters are gone from the editor — every new
+			// trigger listens to anyone. A legacy row that still carries a list
+			// keeps its chip, so the filter stays visible and removable.
+			const legacyList =
+				config.actor.mode === "list" && config.actor.ids.length > 0;
+			if (!legacyList) {
+				return (
+					<span key={index} className="text-[13px] text-muted-foreground">
+						Anyone
+					</span>
+				);
+			}
 			return (
 				<ScopeChip
 					key={index}
@@ -82,6 +84,7 @@ function renderSlot(
 					disabled={disabled}
 				/>
 			);
+		}
 		case "messageFilter": {
 			// The same field filters a message's text or a new channel's name;
 			// only the words around it change.
@@ -101,16 +104,6 @@ function renderSlot(
 				/>
 			);
 		}
-		case "topLevelOnly":
-			return (
-				<SelectChip
-					key={index}
-					value={config.topLevelOnly === false ? "replies" : "top"}
-					onChange={(v) => set({ topLevelOnly: v === "top" })}
-					options={THREAD_OPTIONS}
-					disabled={disabled}
-				/>
-			);
 		case "completionReaction": {
 			// A row saved before this field existed has no key at all; the schema
 			// defaults it on save, so the chip must show the same default rather
@@ -129,7 +122,9 @@ function renderSlot(
 						set({ completionReaction: names[names.length - 1] ?? null })
 					}
 					emptyLabel="No reaction"
-					placeholder=":white_check_mark:"
+					placeholder=":custom_emoji_name:"
+					noneLabel="No reaction"
+					defaultName="white_check_mark"
 					disabled={disabled}
 				/>
 			);
@@ -166,9 +161,7 @@ export const slackProvider: TriggerProvider<SlackConfig> = {
 		if (outside.length === 0) return [];
 		const list = outside.join(", ");
 		return [
-			outside.length === 1
-				? `This trigger will not run for messages in ${list} until @Superset is invited to it.`
-				: `This trigger will not run for messages in ${list} until @Superset is invited to them.`,
+			`This trigger will not run for messages in ${list} until @Superset is invited.`,
 		];
 	},
 };

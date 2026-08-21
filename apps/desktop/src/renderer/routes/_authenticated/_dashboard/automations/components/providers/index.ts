@@ -21,21 +21,22 @@ export type {
 } from "./types";
 
 /**
- * Every provider the editor knows, in Add Trigger menu order.
+ * Every provider the editor knows, in Add Trigger menu order — most used to
+ * least, not alphabetical.
  *
- * To add one: write a `TriggerProvider` under `providers/<name>/` and append it
- * here. Nothing else in the editor should need to change.
+ * To add one: write a `TriggerProvider` under `providers/<name>/` and slot it
+ * here by importance. Nothing else in the editor should need to change.
  */
 export const TRIGGER_PROVIDERS: TriggerProvider[] = [
 	scheduleProvider as TriggerProvider,
 	githubProvider as TriggerProvider,
+	slackProvider as TriggerProvider,
+	microsoftTeamsProvider as TriggerProvider,
 	sentryProvider as TriggerProvider,
 	linearProvider as TriggerProvider,
-	notionProvider as TriggerProvider,
-	slackProvider as TriggerProvider,
 	webhookProvider as TriggerProvider,
+	notionProvider as TriggerProvider,
 	circlebackProvider as TriggerProvider,
-	microsoftTeamsProvider as TriggerProvider,
 	googleCalendarProvider as TriggerProvider,
 	gmailProvider as TriggerProvider,
 ];

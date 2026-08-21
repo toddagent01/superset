@@ -49,7 +49,9 @@ export function TriggerSentence({
 	const invalid = new Set((problems ?? []).map((p) => p.field));
 
 	return (
-		<div className="group flex min-h-10 flex-wrap items-center gap-1.5 rounded-[8px] px-2 py-1.5 hover:bg-foreground/[0.03]">
+		// select-text: the renderer body sets user-select: none, and the
+		// sentence is prose that opts back in.
+		<div className="group flex min-h-10 select-text flex-wrap items-center gap-1.5 rounded-[8px] px-2 py-1.5 hover:bg-foreground/[0.03]">
 			<Icon className="size-4 shrink-0 text-muted-foreground" />
 
 			{provider.renderSentence(config, {
