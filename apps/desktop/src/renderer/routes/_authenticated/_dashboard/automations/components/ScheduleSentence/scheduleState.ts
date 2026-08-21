@@ -7,7 +7,7 @@ import {
 
 export type PresetKind = PresetMatch["kind"];
 
-export interface SchedulePickerState {
+export interface ScheduleState {
 	kind: PresetKind;
 	hour: number;
 	minute: number;
@@ -33,9 +33,9 @@ export const DAY_OPTIONS: { value: Weekday; label: string }[] = [
 ];
 
 /** Derive the picker's structured state from an RRULE string. */
-export function stateFromRrule(rrule: string): SchedulePickerState {
+export function stateFromRrule(rrule: string): ScheduleState {
 	const match = matchPreset(rrule);
-	const base: SchedulePickerState = {
+	const base: ScheduleState = {
 		kind: match.kind,
 		hour: 9,
 		minute: 0,
@@ -60,7 +60,7 @@ export function stateFromRrule(rrule: string): SchedulePickerState {
 }
 
 /** Serialize the picker state back into an RRULE string. */
-export function rruleFromState(state: SchedulePickerState): string {
+export function rruleFromState(state: ScheduleState): string {
 	switch (state.kind) {
 		case "hourly":
 			return buildRrule({ kind: "hourly" });

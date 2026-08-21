@@ -5,16 +5,16 @@ import {
 } from "@superset/shared/rrule";
 import { cn } from "@superset/ui/utils";
 import { type ReactNode, useMemo, useRef, useState } from "react";
+import { CHIP } from "../TriggerSentence/chipStyles";
+import { SelectChip } from "../TriggerSentence/components/SelectChip";
 import {
 	DAY_OPTIONS,
 	formatTimeInputValue,
 	parseTimeInputValue,
 	rruleFromState,
-	type SchedulePickerState,
+	type ScheduleState,
 	stateFromRrule,
-} from "../SchedulePicker/scheduleState";
-import { CHIP } from "../TriggerSentence/chipStyles";
-import { SelectChip } from "../TriggerSentence/components/SelectChip";
+} from "./scheduleState";
 
 interface ScheduleSentenceProps {
 	rrule: string;
@@ -45,7 +45,7 @@ export function ScheduleSentence({
 	className,
 	disabled,
 }: ScheduleSentenceProps) {
-	const [state, setState] = useState<SchedulePickerState>(() =>
+	const [state, setState] = useState<ScheduleState>(() =>
 		stateFromRrule(rrule),
 	);
 	// Resync when the rrule changes underneath us (remote edit, version
@@ -66,7 +66,7 @@ export function ScheduleSentence({
 		onRruleChange(serialized);
 	};
 
-	const update = (patch: Partial<SchedulePickerState>) => {
+	const update = (patch: Partial<ScheduleState>) => {
 		const next = { ...state, ...patch };
 		setState(next);
 		if (next.kind !== "custom") {
