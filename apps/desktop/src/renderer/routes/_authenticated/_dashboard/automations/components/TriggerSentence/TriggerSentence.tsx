@@ -86,10 +86,10 @@ export function TriggerSentence({
 		// select-text: the renderer body sets user-select: none, and the
 		// sentence is prose that opts back in.
 		<div className="group flex min-h-10 select-text flex-wrap items-center gap-1.5 rounded-[8px] px-2 py-1.5 hover:bg-foreground/[0.03]">
-			{/* mr-0.5 on top of the row's gap-1.5 puts 8px after the icon, matching
-			    the 8px the row's own padding puts before it — so the mark sits
-			    evenly rather than crowding the first word. */}
-			<Icon className="mr-0.5 size-4 shrink-0 text-muted-foreground" />
+			{/* mr-1.5 on top of the row's gap-1.5 puts 12px after the icon. Wider
+			    than the row's own 8px inset on purpose: the brand glyphs do not
+			    fill their 16px box, so a gap that measures even reads tight. */}
+			<Icon className="mr-1.5 size-4 shrink-0 text-muted-foreground" />
 
 			{requiresConnection ? (
 				<>
