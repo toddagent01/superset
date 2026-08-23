@@ -37,6 +37,10 @@ function renderSlot(
 					options={options.github?.repositories ?? []}
 					emptyLabel="Select repos"
 					anyLabel="Any repo"
+					// Saving already requires one of these, and the default is an empty
+					// list so a half-built trigger matches nothing. Offering "any"
+					// would undo both — it saves cleanly and fires on everything.
+					allowAny={false}
 					countNoun={{ singular: "repository", plural: "repositories" }}
 					// A repo missing from the roster means the GitHub App was never
 					// granted it; the fix is the install flow, which lives in the
