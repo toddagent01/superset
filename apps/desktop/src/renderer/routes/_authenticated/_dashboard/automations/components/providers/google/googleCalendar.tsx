@@ -86,6 +86,7 @@ function renderSlot(
 
 export const googleCalendarProvider: TriggerProvider<GoogleCalendarConfig> = {
 	kind: "google_calendar",
+	connectionProvider: "google",
 	optionGroup: "google",
 	label: "Google Calendar",
 	icon: SiGooglecalendar,

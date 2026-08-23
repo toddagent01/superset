@@ -94,6 +94,7 @@ function renderSlot(
 
 export const linearProvider: TriggerProvider<LinearConfig> = {
 	kind: "linear",
+	connectionProvider: "linear",
 	optionGroup: "linear",
 	label: "Linear",
 	icon: SiLinear,

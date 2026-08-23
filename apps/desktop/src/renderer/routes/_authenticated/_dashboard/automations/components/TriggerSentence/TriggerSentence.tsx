@@ -2,9 +2,12 @@ import type {
 	DraftTrigger,
 	TriggerProblem,
 } from "@superset/shared/automation-triggers";
+import { INTEGRATIONS } from "@superset/shared/integrations";
 import { Button } from "@superset/ui/button";
+import { cn } from "@superset/ui/utils";
 import type { ReactNode } from "react";
-import { LuTrash2 } from "react-icons/lu";
+import { LuArrowUpRight, LuTrash2 } from "react-icons/lu";
+import { env } from "renderer/env.renderer";
 import { type ProviderOptions, providerFor } from "../providers";
 import type { OptionGroupState } from "../providers/types";
 import { CHIP_INVALID } from "./chipStyles";
@@ -19,6 +22,13 @@ interface TriggerSentenceProps {
 	problems?: TriggerProblem[];
 	/** Trailing "Next run ..." text for a schedule row. */
 	nextRun?: ReactNode;
+	/**
+	 * True when this provider needs an integration nobody has connected yet.
+	 * The row still renders its sentence — a trigger configured before the
+	 * integration was disconnected should keep showing what it watches — but
+	 * it is inert, and says why.
+	 */
+	requiresConnection?: boolean;
 	disabled?: boolean;
 }
 
@@ -38,6 +48,7 @@ export function TriggerSentence({
 	optionState,
 	problems,
 	nextRun,
+	requiresConnection,
 	disabled,
 }: TriggerSentenceProps) {
 	const config = trigger.config;
@@ -47,6 +58,12 @@ export function TriggerSentence({
 	// A banner naming the row is not enough when a sentence has three chips that
 	// could each be the empty one.
 	const invalid = new Set((problems ?? []).map((p) => p.field));
+
+	// The web app owns every connect flow, because that is where the browser
+	// session lives; this only has to point at the right page.
+	const webPath = INTEGRATIONS.find(
+		(integration) => integration.provider === provider.connectionProvider,
+	)?.webPath;
 
 	return (
 		// select-text: the renderer body sets user-select: none, and the
@@ -61,9 +78,30 @@ export function TriggerSentence({
 				mark: (field) => (invalid.has(field) ? CHIP_INVALID : undefined),
 				options,
 				optionState,
-				disabled,
+				disabled: disabled || requiresConnection,
 				nextRun,
 			})}
+
+			{requiresConnection && (
+				<>
+					<span className="text-[13px] text-amber-600 dark:text-amber-400">
+						Requires connection
+					</span>
+					{webPath && (
+						<Button
+							type="button"
+							size="sm"
+							onClick={() =>
+								window.open(`${env.NEXT_PUBLIC_WEB_URL}${webPath}`, "_blank")
+							}
+							className="ml-auto h-7 gap-1 bg-amber-500/90 text-[13px] text-amber-950 hover:bg-amber-500"
+						>
+							Connect
+							<LuArrowUpRight className="size-3.5" />
+						</Button>
+					)}
+				</>
+			)}
 
 			<Button
 				type="button"
@@ -72,7 +110,11 @@ export function TriggerSentence({
 				aria-label="Remove trigger"
 				disabled={disabled}
 				onClick={onRemove}
-				className="ml-auto size-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-foreground"
+				className={cn(
+					"size-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-foreground",
+					// The Connect button already claimed the right edge.
+					requiresConnection ? "ml-1" : "ml-auto",
+				)}
 			>
 				<LuTrash2 className="size-3.5" />
 			</Button>

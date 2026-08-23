@@ -128,6 +128,7 @@ function renderSlot(
 
 export const githubProvider: TriggerProvider<GithubConfig> = {
 	kind: "github",
+	connectionProvider: "github",
 	optionGroup: "github",
 	label: "GitHub",
 	icon: FaGithub,

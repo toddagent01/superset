@@ -134,6 +134,7 @@ function renderSlot(
 
 export const slackProvider: TriggerProvider<SlackConfig> = {
 	kind: "slack",
+	connectionProvider: "slack",
 	optionGroup: "slack",
 	label: "Slack",
 	icon: FaSlack,

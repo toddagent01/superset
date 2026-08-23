@@ -21,6 +21,18 @@ export type TriggerProvider<
 	label: string;
 	icon: IconType;
 	/**
+	 * The `integration_provider` this trigger needs connected before it can
+	 * fire, if any. Absent for providers that carry their own credentials — a
+	 * schedule needs nothing, and Circleback and Granola post to a per-trigger
+	 * URL with a secret pasted into the row.
+	 *
+	 * Deliberately not derived from `optionGroup`: the two disagree (Teams is
+	 * `microsoftTeams` there and `microsoft_teams` here) and they answer
+	 * different questions — one names a list to fetch, this names a connection
+	 * to check.
+	 */
+	connectionProvider?: string;
+	/**
 	 * The Add Trigger subtree. A single leaf for providers with one trigger
 	 * (Scheduled, Webhook); nested for those with many (GitHub).
 	 */

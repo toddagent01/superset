@@ -28,6 +28,7 @@ import {
 	TRIGGER_PROVIDERS,
 	type TriggerProvider,
 } from "../providers";
+import { useProviderConnections } from "../providers/useProviderConnections";
 import { useProviderOptions } from "../providers/useProviderOptions";
 import { TriggerSentence } from "../TriggerSentence";
 import { TriggerMenuItems } from "./TriggerMenuItems";
@@ -116,6 +117,16 @@ export function TriggersEditor({
 	// describe the world (a channel the bot is not in), not an unfinished edit,
 	// and the person who can fix them may not be the one editing.
 	const { plan } = useCurrentPlan();
+	const { connected, isPending: connectionsPending } =
+		useProviderConnections(organizationId);
+
+	// Unknown is not disconnected: until the first answer lands, a row must not
+	// accuse a perfectly good integration of being missing.
+	const missingConnection = (config: DraftTrigger["config"]) => {
+		if (connectionsPending) return false;
+		const required = providerFor(config).connectionProvider;
+		return required !== undefined && !connected[required];
+	};
 
 	const runtimeWarnings = useMemo(() => {
 		const seen = new Set<string>();
@@ -261,6 +272,7 @@ export function TriggersEditor({
 								? renderNextRun?.(trigger.config)
 								: undefined
 						}
+						requiresConnection={missingConnection(trigger.config)}
 						disabled={readOnly}
 					/>
 				))}

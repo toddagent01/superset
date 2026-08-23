@@ -52,6 +52,7 @@ function renderSlot(
 
 export const sentryProvider: TriggerProvider<SentryConfig> = {
 	kind: "sentry",
+	connectionProvider: "sentry",
 	optionGroup: "sentry",
 	label: "Sentry",
 	icon: SiSentry,

@@ -79,6 +79,7 @@ function renderSlot(
 
 export const notionProvider: TriggerProvider<NotionConfig> = {
 	kind: "notion",
+	connectionProvider: "notion",
 	optionGroup: "notion",
 	label: "Notion",
 	icon: SiNotion,
