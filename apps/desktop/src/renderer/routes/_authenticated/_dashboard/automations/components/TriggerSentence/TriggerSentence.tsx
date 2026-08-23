@@ -9,6 +9,7 @@ import type { ReactNode } from "react";
 import { LuArrowUpRight, LuTrash2 } from "react-icons/lu";
 import { env } from "renderer/env.renderer";
 import { type ProviderOptions, providerFor } from "../providers";
+import { triggerEventLabel } from "../providers/eventLabel";
 import type { OptionGroupState } from "../providers/types";
 import { CHIP_INVALID } from "./chipStyles";
 
@@ -24,9 +25,9 @@ interface TriggerSentenceProps {
 	nextRun?: ReactNode;
 	/**
 	 * True when this provider needs an integration nobody has connected yet.
-	 * The row still renders its sentence — a trigger configured before the
-	 * integration was disconnected should keep showing what it watches — but
-	 * it is inert, and says why.
+	 * The row collapses to the trigger's name and the way to fix it: with no
+	 * connection there is nothing to populate the pickers, so a sentence full
+	 * of empty ones would only ask for choices that cannot be made.
 	 */
 	requiresConnection?: boolean;
 	disabled?: boolean;
@@ -71,36 +72,40 @@ export function TriggerSentence({
 		<div className="group flex min-h-10 select-text flex-wrap items-center gap-1.5 rounded-[8px] px-2 py-1.5 hover:bg-foreground/[0.03]">
 			<Icon className="size-4 shrink-0 text-muted-foreground" />
 
-			{provider.renderSentence(config, {
-				triggerId: trigger.id,
-				set: (patch) =>
-					onChange({ ...trigger, config: { ...config, ...patch } as never }),
-				mark: (field) => (invalid.has(field) ? CHIP_INVALID : undefined),
-				options,
-				optionState,
-				disabled: disabled || requiresConnection,
-				nextRun,
-			})}
-
-			{requiresConnection && (
+			{requiresConnection ? (
 				<>
-					<span className="text-[13px] text-amber-600 dark:text-amber-400">
+					<span className="text-[13px]">
+						{triggerEventLabel(provider, config)}
+					</span>
+					<span className="text-[13px] text-amber-500">
 						Requires connection
 					</span>
 					{webPath && (
 						<Button
 							type="button"
+							variant="outline"
 							size="sm"
 							onClick={() =>
 								window.open(`${env.NEXT_PUBLIC_WEB_URL}${webPath}`, "_blank")
 							}
-							className="ml-auto h-7 gap-1 bg-amber-500/90 text-[13px] text-amber-950 hover:bg-amber-500"
+							className="ml-auto h-7 shrink-0 gap-1 border-amber-500/40 bg-amber-500/10 px-2.5 text-amber-700 text-xs hover:bg-amber-500/20 dark:text-amber-400"
 						>
 							Connect
 							<LuArrowUpRight className="size-3.5" />
 						</Button>
 					)}
 				</>
+			) : (
+				provider.renderSentence(config, {
+					triggerId: trigger.id,
+					set: (patch) =>
+						onChange({ ...trigger, config: { ...config, ...patch } as never }),
+					mark: (field) => (invalid.has(field) ? CHIP_INVALID : undefined),
+					options,
+					optionState,
+					disabled,
+					nextRun,
+				})
 			)}
 
 			<Button
