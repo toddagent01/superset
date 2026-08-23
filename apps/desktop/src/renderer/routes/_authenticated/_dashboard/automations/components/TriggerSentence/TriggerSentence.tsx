@@ -4,7 +4,6 @@ import type {
 } from "@superset/shared/automation-triggers";
 import { INTEGRATIONS } from "@superset/shared/integrations";
 import { Button } from "@superset/ui/button";
-import { cn } from "@superset/ui/utils";
 import type { ReactNode } from "react";
 import { LuArrowUpRight, LuTrash2 } from "react-icons/lu";
 import { env } from "renderer/env.renderer";
@@ -66,6 +65,23 @@ export function TriggerSentence({
 		(integration) => integration.provider === provider.connectionProvider,
 	)?.webPath;
 
+	// Always the first element of the right-hand cluster, so whatever follows
+	// it — nothing, or a Connect button — is what sits against the row's right
+	// padding, mirroring the icon's inset on the left.
+	const removeButton = (
+		<Button
+			type="button"
+			variant="ghost"
+			size="icon"
+			aria-label="Remove trigger"
+			disabled={disabled}
+			onClick={onRemove}
+			className="ml-auto size-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-foreground"
+		>
+			<LuTrash2 className="size-3.5" />
+		</Button>
+	);
+
 	return (
 		// select-text: the renderer body sets user-select: none, and the
 		// sentence is prose that opts back in.
@@ -80,6 +96,7 @@ export function TriggerSentence({
 					<span className="text-[13px] text-amber-500">
 						Requires connection
 					</span>
+					{removeButton}
 					{webPath && (
 						<Button
 							type="button"
@@ -88,7 +105,7 @@ export function TriggerSentence({
 							onClick={() =>
 								window.open(`${env.NEXT_PUBLIC_WEB_URL}${webPath}`, "_blank")
 							}
-							className="ml-auto h-7 shrink-0 gap-1 border-amber-500/40 bg-amber-500/10 px-2.5 text-amber-700 text-xs hover:bg-amber-500/20 dark:text-amber-400"
+							className="h-7 shrink-0 gap-1 border-amber-500/40 bg-amber-500/10 px-2.5 text-amber-700 text-xs hover:bg-amber-500/20 dark:text-amber-400"
 						>
 							Connect
 							<LuArrowUpRight className="size-3.5" />
@@ -108,21 +125,7 @@ export function TriggerSentence({
 				})
 			)}
 
-			<Button
-				type="button"
-				variant="ghost"
-				size="icon"
-				aria-label="Remove trigger"
-				disabled={disabled}
-				onClick={onRemove}
-				className={cn(
-					"size-6 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 text-muted-foreground hover:text-foreground",
-					// The Connect button already claimed the right edge.
-					requiresConnection ? "ml-1" : "ml-auto",
-				)}
-			>
-				<LuTrash2 className="size-3.5" />
-			</Button>
+			{!requiresConnection && removeButton}
 		</div>
 	);
 }
