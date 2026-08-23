@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { cloudTrpc } from "renderer/lib/cloud-trpc";
 
 /** How often to re-ask while someone is looking at the editor. */
-const POLL_MS = 15_000;
+const POLL_MS = 10_000;
 
 /**
  * Which integrations are connected, so a row can say it will never fire.
