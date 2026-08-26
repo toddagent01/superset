@@ -31,6 +31,7 @@ import {
 import { useProviderConnections } from "../providers/useProviderConnections";
 import { useProviderOptions } from "../providers/useProviderOptions";
 import { TriggerSentence } from "../TriggerSentence";
+import { RuntimeWarnings } from "./components/RuntimeWarnings";
 import { TriggerMenuItems } from "./TriggerMenuItems";
 import { flattenTriggerMenu, matchesQuery } from "./triggerMenu";
 
@@ -361,19 +362,7 @@ export function TriggersEditor({
 			{/* Below the surface and the scope line, like the save banner is above
 			    them: these outlive any save, so they cannot live in the
 			    submit-gated banner. */}
-			{runtimeWarnings.length > 0 && (
-				<div className="flex flex-col gap-2 px-1 py-6">
-					{runtimeWarnings.map((warning) => (
-						<p
-							key={warning}
-							className="flex cursor-text select-text items-start gap-1.5 text-[13px] text-amber-600 dark:text-amber-400"
-						>
-							<LuTriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-							<span>{warning}</span>
-						</p>
-					))}
-				</div>
-			)}
+			<RuntimeWarnings warnings={runtimeWarnings} />
 		</div>
 	);
 }
