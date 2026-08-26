@@ -67,6 +67,12 @@ async function row(
 		ui,
 		chip: (name: string | RegExp) => ui.getByRole("button", { name }),
 		queryChip: (name: string | RegExp) => ui.queryByRole("button", { name }),
+		open: async (name: string | RegExp) => {
+			await act(async () => {
+				ui.getByRole("button", { name }).click();
+			});
+			return ui;
+		},
 		chips: () =>
 			ui
 				.getAllByRole("button")
@@ -105,10 +111,21 @@ describe("a GitHub row that was just added", () => {
 	});
 
 	// An empty repository list matches nothing, so an unfinished trigger cannot
-	// fire on every repository. "Any repo" is deliberately not offered.
+	// fire on every repository. The offer has to be absent from inside the
+	// picker — on the closed chip "Any repo" is only ever a label for a scope
+	// that is already "any", so asserting there proves nothing.
 	test("does not offer to watch every repository", async () => {
-		const { queryChip } = await row(config("pull_request.opened"));
-		expect(queryChip("Any repo")).toBeNull();
+		const { open } = await row(config("pull_request.opened"));
+		const picker = await open("Select repo");
+		expect(picker.queryByText("Any repo")).toBeNull();
+	});
+
+	// One repository, because branches and labels belong to one and cannot be
+	// listed until it is known.
+	test("takes one repository, not a set", async () => {
+		const { open } = await row(config("pull_request.opened"));
+		const picker = await open("Select repo");
+		expect(picker.queryByRole("checkbox")).toBeNull();
 	});
 });
 
