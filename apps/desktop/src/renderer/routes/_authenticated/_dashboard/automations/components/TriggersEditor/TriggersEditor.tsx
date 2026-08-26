@@ -4,11 +4,6 @@ import {
 	enabledTriggerKinds,
 	summarizeTriggerProblems,
 } from "@superset/shared/automation-triggers";
-import {
-	type PlanTier,
-	planAllowsTriggerKind,
-	requiredPlanForTriggerKind,
-} from "@superset/shared/billing";
 import { FEATURE_FLAGS } from "@superset/shared/constants";
 import { Button } from "@superset/ui/button";
 import {
@@ -23,15 +18,12 @@ import { useFeatureFlagPayload } from "posthog-js/react";
 import { type ReactNode, useMemo, useState } from "react";
 import { LuPlus, LuTriangleAlert } from "react-icons/lu";
 import { useCurrentPlan } from "renderer/hooks/useCurrentPlan";
-import {
-	providerFor,
-	TRIGGER_PROVIDERS,
-	type TriggerProvider,
-} from "../providers";
+import { providerFor, TRIGGER_PROVIDERS } from "../providers";
 import { useProviderConnections } from "../providers/useProviderConnections";
 import { useProviderOptions } from "../providers/useProviderOptions";
 import { TriggerSentence } from "../TriggerSentence";
 import { RuntimeWarnings } from "./components/RuntimeWarnings";
+import { collectRuntimeWarnings, lockedTierFor } from "./runtimeWarnings";
 import { TriggerMenuItems } from "./TriggerMenuItems";
 import { flattenTriggerMenu, matchesQuery } from "./triggerMenu";
 
@@ -39,20 +31,6 @@ type ScheduleTriggerConfig = Extract<
 	DraftTrigger["config"],
 	{ kind: "schedule" }
 >;
-
-/**
- * The tier badge for a provider the viewer's plan can't add, or null when it
- * can. The dispatcher enforces the same shared map — an above-tier trigger
- * stays editable but never fires.
- */
-function lockedTierFor(
-	provider: TriggerProvider,
-	plan: PlanTier,
-): string | null {
-	const required = requiredPlanForTriggerKind(provider.kind);
-	if (!required || planAllowsTriggerKind(plan, provider.kind)) return null;
-	return required === "enterprise" ? "Enterprise" : "Pro";
-}
 
 interface TriggersEditorProps {
 	triggers: DraftTrigger[];
@@ -129,22 +107,10 @@ export function TriggersEditor({
 		return required !== undefined && !connected[required];
 	};
 
-	const runtimeWarnings = useMemo(() => {
-		const seen = new Set<string>();
-		for (const draft of drafts) {
-			const provider = providerFor(draft.config);
-			// A downgraded org keeps its rows; the warning names the tier they
-			// came from rather than hiding them.
-			const tier = lockedTierFor(provider, plan);
-			if (tier)
-				seen.add(`${provider.label} triggers require the ${tier} plan.`);
-			for (const warning of provider.runtimeWarnings?.(draft.config, options) ??
-				[]) {
-				seen.add(warning);
-			}
-		}
-		return [...seen];
-	}, [drafts, options, plan]);
+	const runtimeWarnings = useMemo(
+		() => collectRuntimeWarnings(drafts, options, plan),
+		[drafts, options, plan],
+	);
 
 	// Nothing is wrong until someone says they are done. Every trigger is
 	// incomplete the instant it is added, so validating as you type marks a row
