@@ -11,7 +11,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@superset/ui/popover";
 import { cn } from "@superset/ui/utils";
 import { useState } from "react";
-import { LuPlus, LuRefreshCw } from "react-icons/lu";
+import { LuCheck, LuPlus, LuRefreshCw } from "react-icons/lu";
 import type { OptionGroupState } from "../../../providers/types";
 import type { ScopeOption } from "../../scopeOption";
 import { ChipButton } from "../ChipButton";
@@ -64,6 +64,7 @@ export function ScopeChip({
 	anyLabel,
 	allowAny = true,
 	allowMe = false,
+	single = false,
 	countNoun,
 	allowCustom,
 	action,
@@ -83,6 +84,12 @@ export function ScopeChip({
 	 * still needs its chip labelled.
 	 */
 	allowAny?: boolean;
+	/**
+	 * One value, not a set: picking a row replaces the selection and closes.
+	 * For repositories, whose branches and labels can only be listed once a
+	 * single repository is known.
+	 */
+	single?: boolean;
 	/** "2 channels" instead of the generic "2 selected". */
 	countNoun?: { singular: string; plural: string };
 	/** Search placeholder doubling as the invitation to paste/type a value. */
@@ -115,6 +122,11 @@ export function ScopeChip({
 	};
 
 	const toggle = (id: string) => {
+		if (single) {
+			onChange({ mode: "list", ids: [id] });
+			setOpen(false);
+			return;
+		}
 		const next = selected.includes(id)
 			? selected.filter((s) => s !== id)
 			: [...selected, id];
@@ -166,10 +178,19 @@ export function ScopeChip({
 			value={`${label} ${hint ?? ""} ${id}`}
 			onSelect={() => toggle(id)}
 		>
-			<Checkbox
-				checked={selected.includes(id)}
-				className="pointer-events-none"
-			/>
+			{single ? (
+				<LuCheck
+					className={cn(
+						"size-4 shrink-0",
+						!selected.includes(id) && "invisible",
+					)}
+				/>
+			) : (
+				<Checkbox
+					checked={selected.includes(id)}
+					className="pointer-events-none"
+				/>
+			)}
 			{/* The checkbox column already says these are channels; the # prefix
 			    on every row is noise the sentence chip still keeps. */}
 			{label.replace(/^#/, "")}
@@ -237,15 +258,34 @@ export function ScopeChip({
 							</CommandItem>
 						)}
 
-						{selectedRows.length > 0 && (
-							<CommandGroup heading="Selected">
-								{selectedRows.map(row)}
-							</CommandGroup>
-						)}
-						{restRows.length > 0 && (
-							<CommandGroup heading={restHeading}>
-								{restRows.map(row)}
-							</CommandGroup>
+						{/* One list when single: with nothing to accumulate there is no
+						    selection to gather at the top, and a row that jumped groups
+						    on click would move the target under the next one. */}
+						{single ? (
+							options.length > 0 && (
+								<CommandGroup heading={restHeading}>
+									{options.map((option) =>
+										row({
+											id: option.id,
+											label: option.label,
+											hint: option.hint,
+										}),
+									)}
+								</CommandGroup>
+							)
+						) : (
+							<>
+								{selectedRows.length > 0 && (
+									<CommandGroup heading="Selected">
+										{selectedRows.map(row)}
+									</CommandGroup>
+								)}
+								{restRows.length > 0 && (
+									<CommandGroup heading={restHeading}>
+										{restRows.map(row)}
+									</CommandGroup>
+								)}
+							</>
 						)}
 
 						{/* Always matches — its value is the query itself. */}
@@ -270,9 +310,10 @@ export function ScopeChip({
 					</CommandList>
 
 					{/* Below the scroll, not in it: reachable however long the list.
-					    The action shows even with an empty roster — an empty roster is
-					    exactly when "Add repositories" is the way forward. */}
-					{(action || (state && options.length > 0)) && (
+					    Both show with an empty roster — that is exactly when "Add
+					    repositories" is the way forward and when a list that failed to
+					    load needs retrying. */}
+					{(action || state) && (
 						<div className="flex items-center border-t">
 							{action && (
 								<button
@@ -284,7 +325,7 @@ export function ScopeChip({
 									{action.label}
 								</button>
 							)}
-							{state && options.length > 0 && (
+							{state && (
 								<button
 									type="button"
 									disabled={state.isLoading}

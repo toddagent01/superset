@@ -22,7 +22,6 @@ interface ScheduleSentenceProps {
 	timezone: string;
 	/** Trailing "Next run ..." text, shown inline at the end of the sentence. */
 	nextRun?: ReactNode;
-	className?: string;
 	disabled?: boolean;
 }
 
@@ -42,7 +41,6 @@ export function ScheduleSentence({
 	onRruleChange,
 	timezone,
 	nextRun,
-	className,
 	disabled,
 }: ScheduleSentenceProps) {
 	const [state, setState] = useState<ScheduleState>(() =>
@@ -101,19 +99,19 @@ export function ScheduleSentence({
 
 	const showsTime = state.kind === "daily" || state.kind === "weekly";
 
+	// A fragment, not a wrapper: the row this sits in is the flex container that
+	// wraps, and a nested one is a single item that cannot share a line with the
+	// row's icon — it drops to its own line and takes the whole sentence with it.
 	return (
-		<div
-			className={cn(
-				"flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px]",
-				className,
+		<>
+			{state.kind === "hourly" && (
+				<span className="text-[13px]">Every hour</span>
 			)}
-		>
-			{state.kind === "hourly" && <span>Every hour</span>}
-			{state.kind === "daily" && <span>Every day</span>}
+			{state.kind === "daily" && <span className="text-[13px]">Every day</span>}
 			{state.kind === "weekly" && (
 				<>
-					<span>Every week</span>
-					<span>on</span>
+					<span className="text-[13px]">Every week</span>
+					<span className="text-[13px]">on</span>
 					<SelectChip
 						value={state.day}
 						disabled={disabled}
@@ -125,7 +123,7 @@ export function ScheduleSentence({
 
 			{showsTime && (
 				<>
-					<span>at</span>
+					<span className="text-[13px]">at</span>
 					<SelectChip
 						value={timeValue}
 						disabled={disabled}
@@ -140,7 +138,7 @@ export function ScheduleSentence({
 						    silently move when the automation fires — create it in Los
 						    Angeles, open it from London, and an 11:00 job becomes a
 						    19:00 one. */}
-					<span title={timezone.replace(/_/g, " ")}>
+					<span className="text-[13px]" title={timezone.replace(/_/g, " ")}>
 						{timezoneAbbreviation(timezone)}
 					</span>
 				</>
@@ -148,7 +146,7 @@ export function ScheduleSentence({
 
 			{state.kind === "custom" && (
 				<>
-					<span className="shrink-0">Custom schedule</span>
+					<span className="shrink-0 text-[13px]">Custom schedule</span>
 					<input
 						disabled={disabled}
 						placeholder="FREQ=WEEKLY;BYDAY=FR;BYHOUR=9;BYMINUTE=0"
@@ -166,16 +164,18 @@ export function ScheduleSentence({
 				    rule that won't save has no next run, and showing both at once
 				    reads as a contradiction. */}
 			{showsProblem ? (
-				<span className="ml-1 truncate text-destructive">
+				<span className="ml-1 truncate text-[13px] text-destructive">
 					{customProblem === "exhausted"
 						? "No upcoming runs — changes aren't saved"
 						: "Invalid recurrence rule — changes aren't saved"}
 				</span>
 			) : (
 				nextRun && (
-					<span className="ml-1 truncate text-muted-foreground">{nextRun}</span>
+					<span className="ml-1 truncate text-[13px] text-muted-foreground">
+						{nextRun}
+					</span>
 				)
 			)}
-		</div>
+		</>
 	);
 }

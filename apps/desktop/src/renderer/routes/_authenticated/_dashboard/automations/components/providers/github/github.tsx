@@ -6,6 +6,8 @@ import { ScopeChip } from "../../TriggerSentence/components/ScopeChip";
 import { TextFilterChip } from "../../TriggerSentence/components/TextFilterChip";
 import { Sentence } from "../components/Sentence";
 import type { SentenceContext, TriggerProvider } from "../types";
+import { TypedScopeChip } from "./components/TypedScopeChip";
+import { UserScopeChip } from "./components/UserScopeChip";
 import {
 	GITHUB_MENU,
 	GITHUB_SENTENCES,
@@ -35,12 +37,15 @@ function renderSlot(
 					onChange={(v) => set({ repositories: v })}
 					className={mark("repositories")}
 					options={options.github?.repositories ?? []}
-					emptyLabel="Select repos"
+					emptyLabel="Select repo"
 					anyLabel="Any repo"
 					// Saving already requires one of these, and the default is an empty
 					// list so a half-built trigger matches nothing. Offering "any"
 					// would undo both — it saves cleanly and fires on everything.
 					allowAny={false}
+					// One repository, because the branches and labels of a trigger are
+					// only listable once it is known which repository they belong to.
+					single
 					countNoun={{ singular: "repository", plural: "repositories" }}
 					// A repo missing from the roster means the GitHub App was never
 					// granted it; the fix is the install flow, which lives in the
@@ -76,43 +81,35 @@ function renderSlot(
 			);
 		case "labels":
 			return (
-				<ScopeChip
+				<TypedScopeChip
 					key={index}
 					scope={c.labels}
-					onChange={(v) =>
-						set({ labels: isEmptyScope(v) ? { mode: "any" } : v })
-					}
-					options={[]}
-					emptyLabel="Any label"
+					onChange={(v) => set({ labels: v })}
 					anyLabel="Any label"
+					placeholder="Label name..."
+					countNoun={{ singular: "label", plural: "labels" }}
 					disabled={disabled}
 				/>
 			);
 		case "actor":
 			return (
-				<ScopeChip
+				<UserScopeChip
 					key={index}
 					scope={c.actor}
 					onChange={(v) => set({ actor: v })}
 					className={mark("actor")}
 					options={options.github?.people ?? []}
-					emptyLabel="Select people"
-					anyLabel="Anyone"
-					allowMe
 					disabled={disabled}
 				/>
 			);
 		case "subjectAuthor":
 			return (
-				<ScopeChip
+				<UserScopeChip
 					key={index}
 					scope={c.subjectAuthor}
 					onChange={(v) => set({ subjectAuthor: v })}
 					className={mark("subjectAuthor")}
 					options={options.github?.people ?? []}
-					emptyLabel="Select people"
-					anyLabel="Anyone"
-					allowMe
 					disabled={disabled}
 				/>
 			);
