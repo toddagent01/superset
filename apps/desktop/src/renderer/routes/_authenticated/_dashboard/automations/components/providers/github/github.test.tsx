@@ -20,6 +20,19 @@ afterAll(async () => {
 	if (!alreadyRegistered) await GlobalRegistrator.unregister();
 });
 
+/**
+ * What a GitHub row looks like, and must keep looking like.
+ *
+ * The diagrams over each block are the point of this file: the components
+ * underneath are expected to be generalized, and these say what the result has
+ * to render regardless of how it is built.
+ *
+ *     [word ▾]  a chip — a button you can open
+ *      word     fixed wording, not a control
+ *      (!)      marked as blocking the save
+ *      [🗑]     remove, always last
+ */
+
 const REPOS = [
 	{ id: "10", label: "superset", hint: "superset-sh" },
 	{ id: "20", label: "domains", hint: "superset-sh" },
@@ -70,6 +83,11 @@ const config = (event: string, over: Record<string, unknown> = {}) => ({
 	...over,
 });
 
+/**
+ * As added — the repository is the one thing with no default:
+ *
+ *   ⌥ PR opened in [Select repo ▾] by [Anyone ▾]               [🗑]
+ */
 describe("a GitHub row that was just added", () => {
 	test("asks for a repository, because it has no default", async () => {
 		const { chip } = await row(config("pull_request.opened"));
@@ -94,6 +112,9 @@ describe("a GitHub row that was just added", () => {
 	});
 });
 
+/**
+ *   ⌥ PR opened in [superset ▾] by [Anyone ▾]
+ */
 describe("a GitHub row watching one repository", () => {
 	const chosen = () =>
 		config("pull_request.opened", {
@@ -111,6 +132,10 @@ describe("a GitHub row watching one repository", () => {
 	});
 });
 
+/**
+ *   … by [Anyone ▾]   [Me ▾]   [saddlepaddle ▾]   [2 people ▾]
+ *                              [Specific People ▾]  ← chosen, none named
+ */
 describe("a GitHub row filtering by person", () => {
 	const withActor = (actor: unknown) =>
 		config("pull_request.opened", {
@@ -147,6 +172,12 @@ describe("a GitHub row filtering by person", () => {
 	});
 });
 
+/**
+ * Not connected — the sentence collapses, because nothing in it could be
+ * filled in:
+ *
+ *   ⌥ Pull request Opened  Requires connection   [🗑] [Connect ↗]
+ */
 describe("a GitHub row whose integration is not connected", () => {
 	const disconnected = () =>
 		row(config("pull_request.opened"), { requiresConnection: true });
@@ -181,6 +212,9 @@ describe("a GitHub row whose integration is not connected", () => {
 	});
 });
 
+/**
+ *   ⌥ PR opened in [Select repo ▾](!) by [Anyone ▾]
+ */
 describe("a GitHub row a save was refused on", () => {
 	// There is no Save button — the set saves itself once valid — so marking
 	// the chip is the only thing that says which word is holding it back.
@@ -277,5 +311,79 @@ describe('a GitHub row that filters by "Me" with no account connected', () => {
 
 	test("stays quiet when no scope asks for Me", () => {
 		expect(warningsFor({})).toEqual([]);
+	});
+});
+
+/**
+ * The optional filters, which start wide open rather than empty — clearing the
+ * last value returns them to "any" rather than leaving a list that matches
+ * nothing:
+ *
+ *   ⌥ Label [Any label ▾] changed in [superset ▾] by [Anyone ▾]
+ *   ⌥ Push to [Any branch ▾] in [superset ▾] by [Anyone ▾]
+ */
+describe("a GitHub row's optional filters", () => {
+	const inRepo = (event: string, over: Record<string, unknown> = {}) =>
+		config(event, { repositories: { mode: "list", ids: ["10"] }, ...over });
+
+	test("labels start wide open", async () => {
+		const { chip } = await row(inRepo("label_change"));
+		expect(chip("Any label")).toBeDefined();
+	});
+
+	test("one label is named", async () => {
+		const { chip } = await row(
+			inRepo("label_change", { labels: { mode: "list", ids: ["bug"] } }),
+		);
+		expect(chip("bug")).toBeDefined();
+	});
+
+	// Labels are typed, not picked, so a label containing spaces has to survive
+	// as one value.
+	test("a label with spaces stays one label", async () => {
+		const { chip } = await row(
+			inRepo("label_change", {
+				labels: { mode: "list", ids: ["good first issue"] },
+			}),
+		);
+		expect(chip("good first issue")).toBeDefined();
+	});
+
+	test("several labels are counted", async () => {
+		const { chip } = await row(
+			inRepo("label_change", {
+				labels: { mode: "list", ids: ["bug", "urgent"] },
+			}),
+		);
+		expect(chip("2 labels")).toBeDefined();
+	});
+
+	test("branches start wide open", async () => {
+		const { chip } = await row(inRepo("push_to_branch"));
+		expect(chip("Any branch")).toBeDefined();
+	});
+});
+
+/**
+ * The comment body filter, which carries the verb the sentence does not:
+ *
+ *   ⌥ [Matching "LGTM" ▾] by [Anyone ▾] on a PR by [Anyone ▾] in [superset ▾]
+ */
+describe("a GitHub row filtering a comment body", () => {
+	test("starts matching any comment", async () => {
+		const { chip } = await row(
+			config("comment_added", { repositories: { mode: "list", ids: ["10"] } }),
+		);
+		expect(chip("Any comment")).toBeDefined();
+	});
+
+	test("says what it is matching, in quotes", async () => {
+		const { chip } = await row(
+			config("comment_added", {
+				repositories: { mode: "list", ids: ["10"] },
+				commentFilter: { pattern: "LGTM", isRegex: false },
+			}),
+		);
+		expect(chip('Matching "LGTM"')).toBeDefined();
 	});
 });
