@@ -208,3 +208,50 @@ describe("a scheduled row never asks for a connection", () => {
 		expect(ui.getByLabelText("Remove trigger")).toBeDefined();
 	});
 });
+
+/**
+ * The row is one line, not a stack:
+ *
+ *   🕐 Every week on [Monday ▾] at [09:00 ▾] PDT   Next run …   [🗑]
+ *
+ * Every other provider's sentence renders as a fragment, so its words are
+ * siblings of the row's icon and wrap with it. A schedule that wrapped itself
+ * in a div became one flex item that could not share a line with the icon, and
+ * the row stacked into four.
+ */
+describe("a scheduled row's parts sit on the row itself", () => {
+	test("the sentence is not boxed away from the icon", async () => {
+		const { view } = await row("FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=0");
+		const parts = [...(view.container.firstElementChild?.children ?? [])];
+		// icon + "Every week" + "on" + day + "at" + time + zone + remove
+		expect(parts.length).toBeGreaterThanOrEqual(7);
+	});
+
+	test("the icon leads the row rather than owning a line", async () => {
+		const { view } = await row("FREQ=HOURLY");
+		expect(view.container.firstElementChild?.firstElementChild?.tagName).toBe(
+			"svg",
+		);
+	});
+});
+
+/**
+ * The cadence is chosen once, in the Add Trigger menu. A row never offers to
+ * become a different one — switching Weekly to Hourly would silently discard
+ * the day and hour it was carrying.
+ */
+describe("a scheduled row cannot change cadence", () => {
+	test("offers no way to become hourly or daily", async () => {
+		const { queryChip } = await row("FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=0");
+		expect(queryChip(/Hourly|Daily|Weekly|Custom/)).toBeNull();
+	});
+
+	// "Would run" was dropped: the row says when it runs next, not what it
+	// would hypothetically do.
+	test("does not hedge about whether it runs", async () => {
+		const { view } = await row("FREQ=HOURLY", {
+			nextRun: "Next run in 20 minutes",
+		});
+		expect(view.container.textContent ?? "").not.toContain("Would run");
+	});
+});

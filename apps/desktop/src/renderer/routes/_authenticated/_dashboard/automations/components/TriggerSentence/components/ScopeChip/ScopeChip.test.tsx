@@ -150,3 +150,34 @@ describe("ScopeChip selection", () => {
 		expect(refused.ui.queryByText("Me")).toBeNull();
 	});
 });
+
+describe("ScopeChip rows", () => {
+	// The checkbox column already says these are channels; a # on every row is
+	// noise. The chip in the sentence still keeps it, where it identifies the
+	// thing rather than decorating a list.
+	test("drop a leading # that belongs to the sentence, not the list", async () => {
+		const { ui } = await open({
+			options: [{ id: "C1", label: "#general" }],
+		});
+		expect(ui.getByText("general")).toBeDefined();
+		expect(ui.queryByText("#general")).toBeNull();
+	});
+
+	test("show the group heading even for a single row", async () => {
+		const { ui } = await open({
+			options: [{ id: "C1", label: "#general" }],
+			countNoun: { singular: "channel", plural: "channels" },
+		});
+		expect(ui.getByText("Channels")).toBeDefined();
+	});
+
+	// Searching an owner org or a pasted id has to find the row rather than
+	// offering to add it a second time.
+	test("match on the hint as well as the label", async () => {
+		const { ui } = await open({
+			options: [{ id: "10", label: "superset", hint: "superset-sh" }],
+			allowCustom: { placeholder: "Search..." },
+		});
+		expect(ui.getByText("superset-sh")).toBeDefined();
+	});
+});
