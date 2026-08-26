@@ -11,6 +11,7 @@ if (!alreadyRegistered) GlobalRegistrator.register();
 
 const { act, cleanup, render, within } = await import("@testing-library/react");
 const { TriggerSentence } = await import("../../TriggerSentence");
+const { CHIP_INVALID } = await import("../../TriggerSentence/chipStyles");
 const { githubProvider } = await import("./github");
 const { createGithubConfig } = await import("./grammar");
 
@@ -25,11 +26,17 @@ const REPOS = [
 ];
 
 /**
- * Renders one GitHub row and reads it back as the sentence a person sees.
- * Joined from the row's own parts, not textContent: the spaces a reader sees
- * are flex gaps, so textContent runs the words together.
+ * Renders one GitHub row in a given state and hands back its parts.
+ *
+ * `chip` finds a word of the sentence by the text on it, which is how a person
+ * finds it too. `sentence` joins the row's own children rather than reading
+ * textContent, because the spaces a reader sees are flex gaps — textContent
+ * runs the words together.
  */
-async function row(config: Record<string, unknown>) {
+async function row(
+	config: Record<string, unknown>,
+	props: Record<string, unknown> = {},
+) {
 	let view!: ReturnType<typeof render>;
 	await act(async () => {
 		view = render(
@@ -38,136 +45,237 @@ async function row(config: Record<string, unknown>) {
 				onChange={() => {}}
 				onRemove={() => {}}
 				options={{ github: { repositories: REPOS, people: [], viewer: [] } }}
+				{...props}
 			/>,
 		);
 	});
-	const parts = [...(view.container.firstElementChild?.children ?? [])]
-		.map((child) => (child.textContent ?? "").replace(/\s+/g, " ").trim())
-		.filter(Boolean);
+	const ui = within(view.baseElement as HTMLElement);
 	return {
-		sentence: parts.join(" "),
-		ui: within(view.baseElement as HTMLElement),
+		ui,
+		chip: (name: string | RegExp) => ui.getByRole("button", { name }),
+		queryChip: (name: string | RegExp) => ui.queryByRole("button", { name }),
+		chips: () =>
+			ui
+				.getAllByRole("button")
+				.map((button) => (button.textContent ?? "").trim()),
+		sentence: [...(view.container.firstElementChild?.children ?? [])]
+			.map((child) => (child.textContent ?? "").replace(/\s+/g, " ").trim())
+			.filter(Boolean)
+			.join(" "),
 	};
 }
 
-const warningsFor = (config: Record<string, unknown>, viewer: unknown[] = []) =>
-	githubProvider.runtimeWarnings?.(config as never, {
-		github: { viewer: viewer as never },
-	}) ?? [];
+const config = (event: string, over: Record<string, unknown> = {}) => ({
+	...createGithubConfig(event as never),
+	...over,
+});
 
-describe("the GitHub row reads as a sentence", () => {
-	test("a pull request trigger names where and who", async () => {
-		const { sentence } = await row({
-			...createGithubConfig("pull_request.opened"),
+describe("a GitHub row that was just added", () => {
+	test("asks for a repository, because it has no default", async () => {
+		const { chip } = await row(config("pull_request.opened"));
+		expect(chip("Select repo")).toBeDefined();
+	});
+
+	test("watches anyone until told otherwise", async () => {
+		const { chip } = await row(config("pull_request.opened"));
+		expect(chip("Anyone")).toBeDefined();
+	});
+
+	test("can be removed", async () => {
+		const { ui } = await row(config("pull_request.opened"));
+		expect(ui.getByLabelText("Remove trigger")).toBeDefined();
+	});
+
+	// An empty repository list matches nothing, so an unfinished trigger cannot
+	// fire on every repository. "Any repo" is deliberately not offered.
+	test("does not offer to watch every repository", async () => {
+		const { queryChip } = await row(config("pull_request.opened"));
+		expect(queryChip("Any repo")).toBeNull();
+	});
+});
+
+describe("a GitHub row watching one repository", () => {
+	const chosen = () =>
+		config("pull_request.opened", {
 			repositories: { mode: "list", ids: ["10"] },
 		});
+
+	test("names the repository rather than counting it", async () => {
+		const { chip } = await row(chosen());
+		expect(chip("superset")).toBeDefined();
+	});
+
+	test("no longer asks for one", async () => {
+		const { queryChip } = await row(chosen());
+		expect(queryChip("Select repo")).toBeNull();
+	});
+});
+
+describe("a GitHub row filtering by person", () => {
+	const withActor = (actor: unknown) =>
+		config("pull_request.opened", {
+			repositories: { mode: "list", ids: ["10"] },
+			actor,
+		});
+
+	test('resolves "Me" at delivery, so the row simply says Me', async () => {
+		const { chip } = await row(withActor({ mode: "me" }));
+		expect(chip("Me")).toBeDefined();
+	});
+
+	// A typed login labels itself; there is no roster to look it up in, which
+	// is the whole reason the field takes typed names.
+	test("shows a named person by the name that was typed", async () => {
+		const { chip } = await row(
+			withActor({ mode: "list", ids: ["saddlepaddle"] }),
+		);
+		expect(chip("saddlepaddle")).toBeDefined();
+	});
+
+	test("counts several named people", async () => {
+		const { chip } = await row(
+			withActor({ mode: "list", ids: ["alice", "bob"] }),
+		);
+		expect(chip("2 people")).toBeDefined();
+	});
+
+	// An empty set matches nobody and blocks saving, so it reads as unset even
+	// though a mode was deliberately chosen.
+	test("reads as unset when specific people are chosen but none named", async () => {
+		const { chip } = await row(withActor({ mode: "list", ids: [] }));
+		expect(chip("Specific People")).toBeDefined();
+	});
+});
+
+describe("a GitHub row whose integration is not connected", () => {
+	const disconnected = () =>
+		row(config("pull_request.opened"), { requiresConnection: true });
+
+	// With no connection there is nothing to populate the pickers, so a
+	// sentence full of empty ones would only ask for choices nobody can make.
+	// The name comes off the Add Trigger menu, nested path and all.
+	test("collapses to the name of the trigger", async () => {
+		const { ui } = await disconnected();
+		expect(ui.getByText("Pull request Opened")).toBeDefined();
+	});
+
+	test("says a connection is required", async () => {
+		const { ui } = await disconnected();
+		expect(ui.getByText("Requires connection")).toBeDefined();
+	});
+
+	test("offers the way to fix it", async () => {
+		const { chip } = await disconnected();
+		expect(chip(/Connect/)).toBeDefined();
+	});
+
+	test("hides the pickers entirely", async () => {
+		const { queryChip } = await disconnected();
+		expect(queryChip("Select repo")).toBeNull();
+		expect(queryChip("Anyone")).toBeNull();
+	});
+
+	test("can still be removed", async () => {
+		const { ui } = await disconnected();
+		expect(ui.getByLabelText("Remove trigger")).toBeDefined();
+	});
+});
+
+describe("a GitHub row a save was refused on", () => {
+	// There is no Save button — the set saves itself once valid — so marking
+	// the chip is the only thing that says which word is holding it back.
+	const refused = () =>
+		row(config("pull_request.opened"), {
+			problems: [
+				{ index: 0, field: "repositories", message: "Choose a repository" },
+			],
+		});
+
+	const MARK = "ring-amber-500/50";
+
+	test("marks the chip the save is blocked on", async () => {
+		const { chip } = await refused();
+		expect(CHIP_INVALID).toContain(MARK);
+		expect(chip("Select repo").className).toContain(MARK);
+	});
+
+	test("leaves the chips that are fine alone", async () => {
+		const { chip } = await refused();
+		expect(chip("Anyone").className).not.toContain(MARK);
+	});
+});
+
+describe("a GitHub row that cannot be edited", () => {
+	test("disables every word of the sentence", async () => {
+		const { ui } = await row(config("pull_request.opened"), {
+			disabled: true,
+		});
+		for (const button of ui.getAllByRole("button")) {
+			expect((button as HTMLButtonElement).disabled).toBe(true);
+		}
+	});
+});
+
+/**
+ * The order and wording of the parts, which per-element queries cannot see:
+ * `getByRole` finds a chip wherever it sits, so only the whole sentence catches
+ * a slot moving or a connecting word changing.
+ */
+describe("the wording of a GitHub row", () => {
+	test("a pull request trigger names where, then who", async () => {
+		const { sentence } = await row(
+			config("pull_request.opened", {
+				repositories: { mode: "list", ids: ["10"] },
+			}),
+		);
 		expect(sentence).toBe("PR opened in superset by Anyone");
 	});
 
-	// The comment events are the only ones carrying two different people —
-	// whoever wrote the comment, and whoever opened the thing commented on.
+	// The comment events carry two different people — whoever wrote the
+	// comment, and whoever opened the thing commented on.
 	test("a comment trigger keeps the commenter and the author apart", async () => {
-		const { sentence } = await row({
-			...createGithubConfig("comment_added"),
-			repositories: { mode: "list", ids: ["10"] },
-		});
+		const { sentence } = await row(
+			config("comment_added", {
+				repositories: { mode: "list", ids: ["10"] },
+			}),
+		);
 		expect(sentence).toBe(
 			"Any comment by Anyone on a PR by Anyone in superset",
 		);
 	});
 
 	test("a push trigger names the branch before the repository", async () => {
-		const { sentence } = await row({
-			...createGithubConfig("push_to_branch"),
-			repositories: { mode: "list", ids: ["10"] },
-		});
+		const { sentence } = await row(
+			config("push_to_branch", {
+				repositories: { mode: "list", ids: ["10"] },
+			}),
+		);
 		expect(sentence).toBe("Push to Any branch in superset by Anyone");
 	});
 });
 
-describe("the GitHub row starts unfinished on purpose", () => {
-	// An empty repository list matches nothing, so a half-built trigger cannot
-	// fire on every repository; the form refuses to save until one is chosen.
-	test("a new trigger has no repository and says so", async () => {
-		const { sentence } = await row(createGithubConfig("pull_request.opened"));
-		expect(sentence).toBe("PR opened in Select repo by Anyone");
-	});
-
-	test("one repository is named rather than counted", async () => {
-		const { sentence } = await row({
-			...createGithubConfig("pull_request.opened"),
-			repositories: { mode: "list", ids: ["20"] },
-		});
-		expect(sentence).toContain("domains");
-	});
-});
-
-describe("the GitHub row filters by person three ways", () => {
-	test("anyone, by default", async () => {
-		const { sentence } = await row(createGithubConfig("pull_request.opened"));
-		expect(sentence).toContain("Anyone");
-	});
-
-	test('"Me" resolves at delivery, so the row just says Me', async () => {
-		const { sentence } = await row({
-			...createGithubConfig("pull_request.opened"),
-			repositories: { mode: "list", ids: ["10"] },
-			actor: { mode: "me" },
-		});
-		expect(sentence).toBe("PR opened in superset by Me");
-	});
-
-	// A typed login labels itself; there is no roster to look it up in, which
-	// is the whole reason the field takes typed names.
-	test("a named person shows the name that was typed", async () => {
-		const { sentence } = await row({
-			...createGithubConfig("pull_request.opened"),
-			repositories: { mode: "list", ids: ["10"] },
-			actor: { mode: "list", ids: ["saddlepaddle"] },
-		});
-		expect(sentence).toBe("PR opened in superset by saddlepaddle");
-	});
-
-	test("several named people are counted", async () => {
-		const { sentence } = await row({
-			...createGithubConfig("pull_request.opened"),
-			repositories: { mode: "list", ids: ["10"] },
-			actor: { mode: "list", ids: ["alice", "bob"] },
-		});
-		expect(sentence).toContain("2 people");
-	});
-
-	// An empty set matches nobody and blocks saving, so it reads as unset even
-	// though a mode was deliberately chosen.
-	test("choosing specific people and naming none reads as unset", async () => {
-		const { sentence } = await row({
-			...createGithubConfig("pull_request.opened"),
-			repositories: { mode: "list", ids: ["10"] },
-			actor: { mode: "list", ids: [] },
-		});
-		expect(sentence).toContain("Specific People");
-	});
-});
-
-describe('the GitHub row says when "Me" cannot resolve', () => {
-	const meConfig = {
-		...createGithubConfig("pull_request.opened"),
-		actor: { mode: "me" },
-	};
-
+describe('a GitHub row that filters by "Me" with no account connected', () => {
 	// Configured fine, permanently silent: "Me" resolves against the owner's
 	// GitHub identity when each event arrives, and there isn't one.
-	test("warns when no GitHub account is connected for the viewer", () => {
-		const warnings = warningsFor(meConfig);
+	const warningsFor = (over: Record<string, unknown>, viewer: unknown[] = []) =>
+		githubProvider.runtimeWarnings?.(
+			config("pull_request.opened", over) as never,
+			{ github: { viewer: viewer as never } },
+		) ?? [];
+
+	test("warns that it will not fire", () => {
+		const warnings = warningsFor({ actor: { mode: "me" } });
 		expect(warnings).toHaveLength(1);
 		expect(warnings[0]).toContain("no GitHub account is connected");
 	});
 
 	test("stays quiet once an account resolves", () => {
-		expect(warningsFor(meConfig, [{ id: "42", label: "satya" }])).toEqual([]);
+		expect(
+			warningsFor({ actor: { mode: "me" } }, [{ id: "42", label: "satya" }]),
+		).toEqual([]);
 	});
 
 	test("stays quiet when no scope asks for Me", () => {
-		expect(warningsFor(createGithubConfig("pull_request.opened"))).toEqual([]);
+		expect(warningsFor({})).toEqual([]);
 	});
 });
