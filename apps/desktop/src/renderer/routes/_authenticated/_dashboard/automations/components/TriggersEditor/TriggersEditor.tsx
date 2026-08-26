@@ -1,8 +1,6 @@
 import {
 	type DraftTrigger,
-	describeTriggerProblems,
 	enabledTriggerKinds,
-	summarizeTriggerProblems,
 } from "@superset/shared/automation-triggers";
 import { FEATURE_FLAGS } from "@superset/shared/constants";
 import { Button } from "@superset/ui/button";
@@ -23,6 +21,7 @@ import { useProviderConnections } from "../providers/useProviderConnections";
 import { useProviderOptions } from "../providers/useProviderOptions";
 import { TriggerSentence } from "../TriggerSentence";
 import { RuntimeWarnings } from "./components/RuntimeWarnings";
+import { useTriggerDrafts } from "./hooks/useTriggerDrafts";
 import { collectRuntimeWarnings, lockedTierFor } from "./runtimeWarnings";
 import { TriggerMenuItems } from "./TriggerMenuItems";
 import { flattenTriggerMenu, matchesQuery } from "./triggerMenu";
@@ -75,22 +74,21 @@ export function TriggersEditor({
 	// meant a new row was saved, refused, and dropped on the next render. Saving
 	// silently once it happened to become valid is no better: nothing tells you
 	// which edit crossed the line, or that anything was written at all.
-	const [drafts, setDrafts] = useState(triggers);
+	const {
+		drafts,
+		dirty,
+		saving,
+		shownProblems,
+		banner,
+		edit,
+		add,
+		save,
+		discard,
+	} = useTriggerDrafts(triggers, onChange);
 	const { options, state: optionState } = useProviderOptions(
 		organizationId,
 		drafts,
 	);
-	const [dirty, setDirty] = useState(false);
-	const savedKey = JSON.stringify(triggers);
-	const [prevSavedKey, setPrevSavedKey] = useState(savedKey);
-	if (savedKey !== prevSavedKey) {
-		setPrevSavedKey(savedKey);
-		// Adopt what was saved — it carries the ids the server assigned — unless
-		// there are edits here, which by definition were never sent.
-		if (!dirty) setDrafts(triggers);
-	}
-
-	const problems = useMemo(() => describeTriggerProblems(drafts), [drafts]);
 
 	// Unlike problems, these show without waiting for a save attempt: they
 	// describe the world (a channel the bot is not in), not an unfinished edit,
@@ -111,15 +109,6 @@ export function TriggersEditor({
 		() => collectRuntimeWarnings(drafts, options, plan),
 		[drafts, options, plan],
 	);
-
-	// Nothing is wrong until someone says they are done. Every trigger is
-	// incomplete the instant it is added, so validating as you type marks a row
-	// before anyone has had the chance to fill it in — the complaint lands
-	// before the work. After a rejected save the problems stay live, so they
-	// clear as each one is fixed rather than only on the next attempt.
-	const [submitted, setSubmitted] = useState(false);
-	const shownProblems = submitted ? problems : [];
-	const banner = submitted ? summarizeTriggerProblems(problems) : null;
 
 	const enabledKinds = useFeatureFlagPayload(
 		FEATURE_FLAGS.AUTOMATION_EVENT_TRIGGERS,
@@ -144,40 +133,6 @@ export function TriggersEditor({
 	const results = query
 		? leaves.filter((leaf) => matchesQuery(leaf, query))
 		: [];
-
-	const edit = (next: DraftTrigger[]) => {
-		setDrafts(next);
-		setDirty(true);
-	};
-
-	const [saving, setSaving] = useState(false);
-
-	const save = async () => {
-		// Always clickable: the button is what asks for validation, so disabling
-		// it while the set is invalid would leave no way to find out why.
-		setSubmitted(true);
-		if (problems.length > 0) return;
-
-		setSaving(true);
-		try {
-			await onChange(drafts);
-			setDirty(false);
-			setSubmitted(false);
-		} catch {
-			// Stay dirty and keep the edits: this editor holds the only copy of
-			// them, and the mutation has already reported why it failed.
-		} finally {
-			setSaving(false);
-		}
-	};
-
-	const discard = () => {
-		setDrafts(triggers);
-		setDirty(false);
-		setSubmitted(false);
-	};
-
-	const add = (config: DraftTrigger["config"]) => edit([...drafts, { config }]);
 
 	return (
 		<div className="flex flex-col gap-1">
