@@ -122,7 +122,11 @@ export function TriggerSentence({
 						onChange({ ...trigger, config: { ...config, ...patch } as never }),
 					mark: (field) => (invalid.has(field) ? CHIP_INVALID : undefined),
 					options,
-					optionState,
+					// The one place a provider's group becomes its state; sentences
+					// never name the group, so they cannot name the wrong one.
+					state: provider.optionGroup
+						? optionState?.[provider.optionGroup]
+						: undefined,
 					disabled,
 					nextRun,
 				})

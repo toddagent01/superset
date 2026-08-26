@@ -17,7 +17,7 @@ function renderSlot(
 	config: GoogleCalendarConfig,
 	slot: CalendarSlot,
 	index: number,
-	{ set, mark, options, disabled }: SentenceContext,
+	{ set, mark, options, state, disabled }: SentenceContext,
 ) {
 	// The slot list is derived from this event, so the fields it names are
 	// present on this config member even where the union type cannot say so.
@@ -33,6 +33,7 @@ function renderSlot(
 					options={options.google?.calendars ?? []}
 					emptyLabel="Select calendars"
 					anyLabel="Any calendar"
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -47,6 +48,7 @@ function renderSlot(
 					emptyLabel="Select people"
 					anyLabel="Anyone"
 					allowCustom={{ placeholder: "Search people or add an email..." }}
+					state={state}
 					disabled={disabled}
 				/>
 			);

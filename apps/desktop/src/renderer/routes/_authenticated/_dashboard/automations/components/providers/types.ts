@@ -83,12 +83,16 @@ export type SentenceContext = {
 	mark: (field: string) => string | undefined;
 	options: ProviderOptions;
 	/**
-	 * Whether this provider's option lists are still loading or failed, keyed
-	 * like `options`. An empty list means nothing on its own — chips read this
-	 * to say "loading" or "couldn't reach the provider" instead of showing raw
-	 * ids and a false "nothing to choose".
+	 * How THIS provider's option fetch is going — already resolved from its
+	 * `optionGroup`, so a sentence never names the group again. An empty list
+	 * means nothing on its own; chips read this to say "loading" or "couldn't
+	 * reach the provider" instead of showing a false "nothing to choose".
+	 *
+	 * Resolved here rather than handed over as the whole map because the map
+	 * made every chip repeat the lookup, and a provider that got the key wrong
+	 * — or never passed one — lost loading, errors and Refresh silently.
 	 */
-	optionState?: Record<string, OptionGroupState>;
+	state?: OptionGroupState;
 	disabled?: boolean;
 	/** Trailing text for a schedule row ("Next run …"); other providers ignore it. */
 	nextRun?: ReactNode;

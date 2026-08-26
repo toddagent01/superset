@@ -23,7 +23,7 @@ function renderSlot(
 	config: GithubConfig,
 	slot: Slot,
 	index: number,
-	{ set, mark, options, optionState, disabled }: SentenceContext,
+	{ set, mark, options, state, disabled }: SentenceContext,
 ) {
 	// The slot list is derived from this event, so the fields it names are
 	// present on this config member even where the union type cannot say so.
@@ -58,7 +58,7 @@ function renderSlot(
 								"_blank",
 							),
 					}}
-					state={optionState?.github}
+					state={state}
 					disabled={disabled}
 				/>
 			);

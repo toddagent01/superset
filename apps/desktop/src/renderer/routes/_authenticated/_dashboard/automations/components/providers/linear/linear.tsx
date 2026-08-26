@@ -15,7 +15,7 @@ function renderSlot(
 	config: LinearConfig,
 	slot: Slot,
 	index: number,
-	{ set, mark, options, disabled }: SentenceContext,
+	{ set, mark, options, state, disabled }: SentenceContext,
 ) {
 	switch (slot) {
 		case "teams":
@@ -28,6 +28,7 @@ function renderSlot(
 					options={options.linear?.teams ?? []}
 					emptyLabel="Select teams"
 					anyLabel="Any team"
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -45,6 +46,7 @@ function renderSlot(
 					options={options.linear?.projects ?? []}
 					emptyLabel="Any project"
 					anyLabel="Any project"
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -59,6 +61,7 @@ function renderSlot(
 					options={options.linear?.labels ?? []}
 					emptyLabel="Any label"
 					anyLabel="Any label"
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -73,6 +76,7 @@ function renderSlot(
 					options={options.linear?.statuses ?? []}
 					emptyLabel="Any status"
 					anyLabel="Any status"
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -86,6 +90,7 @@ function renderSlot(
 					options={options.linear?.people ?? []}
 					emptyLabel="Select people"
 					anyLabel="Anyone"
+					state={state}
 					disabled={disabled}
 				/>
 			);

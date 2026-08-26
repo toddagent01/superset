@@ -17,7 +17,7 @@ function renderSlot(
 	config: GmailConfig,
 	slot: GmailSlot,
 	index: number,
-	{ set, mark, options, disabled }: SentenceContext,
+	{ set, mark, options, state, disabled }: SentenceContext,
 ) {
 	switch (slot) {
 		case "from":
@@ -70,6 +70,7 @@ function renderSlot(
 					options={options.google?.labels ?? []}
 					emptyLabel="Any label"
 					anyLabel="Any label"
+					state={state}
 					disabled={disabled}
 				/>
 			);

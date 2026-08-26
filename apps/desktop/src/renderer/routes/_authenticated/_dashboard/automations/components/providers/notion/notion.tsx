@@ -14,7 +14,7 @@ function renderSlot(
 	config: NotionConfig,
 	slot: Slot,
 	index: number,
-	{ set, mark, options, disabled }: SentenceContext,
+	{ set, mark, options, state, disabled }: SentenceContext,
 ) {
 	// The slot list is derived from this event, so the fields it names are
 	// present on this config member even where the union type cannot say so.
@@ -30,6 +30,7 @@ function renderSlot(
 					options={options.notion?.dataSources ?? []}
 					emptyLabel="Select data sources"
 					anyLabel="Any data source"
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -45,6 +46,7 @@ function renderSlot(
 					options={[]}
 					emptyLabel="Any page"
 					anyLabel="Any page"
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -58,6 +60,7 @@ function renderSlot(
 					options={options.notion?.people ?? []}
 					emptyLabel="Select people"
 					anyLabel="Anyone"
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -71,6 +74,7 @@ function renderSlot(
 					options={options.notion?.people ?? []}
 					emptyLabel="Select people"
 					anyLabel="Anyone"
+					state={state}
 					disabled={disabled}
 				/>
 			);

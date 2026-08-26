@@ -14,7 +14,7 @@ function renderSlot(
 	config: MicrosoftTeamsConfig,
 	slot: Slot,
 	index: number,
-	{ set, mark, options, disabled }: SentenceContext,
+	{ set, mark, options, state, disabled }: SentenceContext,
 ) {
 	switch (slot) {
 		case "teams":
@@ -27,6 +27,7 @@ function renderSlot(
 					options={options.microsoftTeams?.teams ?? []}
 					emptyLabel="Select teams"
 					anyLabel="Any team"
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -40,6 +41,7 @@ function renderSlot(
 					options={options.microsoftTeams?.channels ?? []}
 					emptyLabel="Select channels"
 					anyLabel="Any channel"
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -53,6 +55,7 @@ function renderSlot(
 					options={options.microsoftTeams?.people ?? []}
 					emptyLabel="Select people"
 					anyLabel="Anyone"
+					state={state}
 					disabled={disabled}
 				/>
 			);

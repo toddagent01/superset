@@ -27,7 +27,7 @@ function renderSlot(
 	config: SentryConfig,
 	slot: Slot,
 	index: number,
-	{ set, mark, options, optionState, disabled }: SentenceContext,
+	{ set, mark, options, state, disabled }: SentenceContext,
 ) {
 	switch (slot) {
 		case "projects":
@@ -40,7 +40,7 @@ function renderSlot(
 					options={options.sentry?.projects ?? []}
 					emptyLabel="Select projects"
 					anyLabel="Any project"
-					state={optionState?.sentry}
+					state={state}
 					disabled={disabled}
 				/>
 			);

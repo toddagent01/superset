@@ -19,7 +19,7 @@ function renderSlot(
 	config: SlackConfig,
 	slot: Slot,
 	index: number,
-	{ set, mark, options, optionState, disabled }: SentenceContext,
+	{ set, mark, options, state, disabled }: SentenceContext,
 ) {
 	switch (slot) {
 		case "channels":
@@ -41,7 +41,7 @@ function renderSlot(
 					allowCustom={{
 						placeholder: "Search channels or paste channel ID...",
 					}}
-					state={optionState?.slack}
+					state={state}
 					disabled={disabled}
 				/>
 			);
@@ -80,7 +80,7 @@ function renderSlot(
 					emptyLabel="Select people"
 					anyLabel="Anyone"
 					countNoun={{ singular: "person", plural: "people" }}
-					state={optionState?.slack}
+					state={state}
 					disabled={disabled}
 				/>
 			);
