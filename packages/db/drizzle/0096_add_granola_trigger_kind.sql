@@ -1,0 +1,1 @@
+ALTER TYPE "public"."automation_trigger_kind" ADD VALUE 'granola';
